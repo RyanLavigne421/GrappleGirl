@@ -1,6 +1,7 @@
 # Grapple Girl
 The story of a young grapple knight fighting her way in the world
 
+Grant Hedley
 ---
 
 ## Background
