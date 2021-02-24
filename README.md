@@ -1,7 +1,7 @@
 # Grapple Girl
 The story of a young grapple knight fighting her way in the world
 
-Ryan LaVigne
+Grant Hedley, Ryan LaVigne
 ---
 
 ## Background
