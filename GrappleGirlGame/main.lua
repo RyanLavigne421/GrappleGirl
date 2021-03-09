@@ -4,7 +4,7 @@ FLOOR_CATAGORY = 1
 
 function love.load()
     baseWorld = love.physics.newWorld(0, 1000, false)
-    gGirl = Character:new(nil, baseWorld, {100,100},{400, 400});
+    gGirl = Character:new(nil, baseWorld, {love.graphics.getWidth()/2,100},{400, 400});
 
 
     -- floor --
@@ -14,10 +14,21 @@ function love.load()
     floor.fixture = love.physics.newFixture(floor.body, floor.shape, 1)
     floor.fixture:setFriction(1);
     floor.fixture:setCategory(FLOOR_CATAGORY);
+    -- floor end --
+
+    -- grappleAnchor --
+    grappleAnchor = {}
+    grappleAnchor.shape = love.physics.newRectangleShape(50, 50)
+    grappleAnchor.body = love.physics.newBody( baseWorld, love.graphics.getWidth()/2, love.graphics.getHeight()/2, "static")
+    grappleAnchor.fixture = love.physics.newFixture(grappleAnchor.body, grappleAnchor.shape, 1)
+    grappleAnchor.fixture:setFriction(1);
+    grappleAnchor.fixture:setCategory(FLOOR_CATAGORY);
+    -- grappleAnchor end --
+
 end
 
 function love.update(dt)
-    contacts = baseWorld:getContacts( )
+    local contacts = baseWorld:getContacts( )
     for i = 0,#baseWorld:getContacts( ) do
         if contacts[i] ~= nil then
             f1, f2 = contacts[i]:getFixtures()
@@ -35,12 +46,21 @@ function love.update(dt)
 
     baseWorld:update(dt)
     gGirl:update(dt)
+    tmpHandleRope(dt)
 end
 
 function love.draw()
     gGirl:draw()
 
-    -- x,y = floor.body:getPosition()
-    -- Shape:ge
-    --  love.graphics.rectangle("fill", floor.x, floor.y, floor.shape:get)
+    local gaPos = {}
+    gaPos.x, gaPos.y = grappleAnchor.body:getPosition()
+    love.graphics.rectangle("fill", gaPos.x-25, gaPos.y-25, 50, 50)
+
+
+    if grappleropejoint.joint ~= nil then
+        
+        local x1, y1 = gGirl.body:getPosition()
+        local x2, y2 = grappleropejoint.body:getPosition()
+        love.graphics.line(x1, y1, x2, y2)
+    end
 end
