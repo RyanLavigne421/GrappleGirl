@@ -26,8 +26,7 @@ function Character:new(o, world, pos, speed)
         fixture = nil,
         shape = love.physics.newCircleShape(2),
         body = nil,
-        state = nil,
-        lastMouseState = {b1 = false, b2 = false, b3 = false}
+        state = nil
     }
 
     return o
@@ -58,7 +57,6 @@ function Character:update(dt)
         self.canJump = false
         self.body:applyLinearImpulse(0, -400)
     end
-    self:shootRope()
 end
 
 function normalize(x, y)
@@ -67,24 +65,21 @@ function normalize(x, y)
     return (x / v), (y / v)
 end
 
-function Character:shootRope()
-    if love.mouse.isDown(1) ~= self.grapplepod.lastMouseState.b1 then
-        self.grapplepod.lastMouseState.b1 = love.mouse.isDown(1)
-        if (love.mouse.isDown(1)) then
-            local mx, my = love.mouse:getPosition()
-            local x, y = self.body:getPosition()
-            self.grapplepod.body = love.physics.newBody(baseWorld, x, y, "dynamic")
-            self.grapplepod.fixture = love.physics.newFixture(self.grapplepod.body, self.grapplepod.shape, 1)
-            self.grapplepod.fixture:setCategory(GRAPPLEPOD_CATEGORY)
-            self.grapplepod.fixture:setMask(CHARACTER_CATEGORY)
+function Character:ropeMousePressedCallbackshootRope()
+    local mx, my = love.mouse:getPosition()
+    local x, y = self.body:getPosition()
+    self.grapplepod.body = love.physics.newBody(baseWorld, x, y, "dynamic")
+    self.grapplepod.fixture = love.physics.newFixture(self.grapplepod.body, self.grapplepod.shape, 1)
+    self.grapplepod.fixture:setCategory(GRAPPLEPOD_CATEGORY)
+    self.grapplepod.fixture:setMask(CHARACTER_CATEGORY)
 
-            local vx, vy = normalize(mx - x, my - y)
-            self.grapplepod.body:setLinearVelocity(vx * 1500, vy * 1500)
-        else
-            self.grapplepod.fixture:destroy()
-            self.grapplepod.body:destroy()
-            self.grapplepod.body = nil
-            self.grapplepod.fixture = nil
-        end
-    end
+    local vx, vy = normalize(mx - x, my - y)
+    self.grapplepod.body:setLinearVelocity(vx * 1500, vy * 1500)
+end
+
+function Character:ropeMouseReleasedCallbackshootRope()
+    self.grapplepod.fixture:destroy()
+    self.grapplepod.body:destroy()
+    self.grapplepod.body = nil
+    self.grapplepod.fixture = nil
 end

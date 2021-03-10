@@ -98,3 +98,15 @@ function mypostSolve(f1, f2, contact)
 end
 function mypreSolve(f1, f2, contact)
 end
+
+function love.mousepressed(x, y, button, istouch, presses)
+    if button == 1 then
+        gGirl:ropeMousePressedCallbackshootRope()
+    end
+end
+
+function love.mousereleased(x, y, button, istouch, presses)
+    if button == 1 then
+        gGirl:ropeMouseReleasedCallbackshootRope()
+    end
+end
