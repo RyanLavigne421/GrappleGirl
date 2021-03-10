@@ -1,66 +1,100 @@
 require("Character")
 require("love")
-FLOOR_CATAGORY = 1
+FLOOR_CATEGORY = 4
 
 function love.load()
     baseWorld = love.physics.newWorld(0, 1000, false)
-    gGirl = Character:new(nil, baseWorld, {love.graphics.getWidth()/2,100},{400, 400});
-
+    gGirl = Character:new(nil, baseWorld, {love.graphics.getWidth() / 2, 100}, {400, 400})
 
     -- floor --
     floor = {}
     floor.shape = love.physics.newRectangleShape(love.graphics.getWidth(), 100)
-    floor.body = love.physics.newBody( baseWorld, love.graphics.getWidth()/2, love.graphics.getHeight(), "static")
+    floor.body = love.physics.newBody(baseWorld, love.graphics.getWidth() / 2, love.graphics.getHeight(), "static")
     floor.fixture = love.physics.newFixture(floor.body, floor.shape, 1)
-    floor.fixture:setFriction(1);
-    floor.fixture:setCategory(FLOOR_CATAGORY);
+    floor.fixture:setFriction(1)
+    floor.fixture:setCategory(FLOOR_CATEGORY, 10, 9)
     -- floor end --
 
-    -- grappleAnchor --
-    grappleAnchor = {}
-    grappleAnchor.shape = love.physics.newRectangleShape(50, 50)
-    grappleAnchor.body = love.physics.newBody( baseWorld, love.graphics.getWidth()/2, love.graphics.getHeight()/2, "static")
-    grappleAnchor.fixture = love.physics.newFixture(grappleAnchor.body, grappleAnchor.shape, 1)
-    grappleAnchor.fixture:setFriction(1);
-    grappleAnchor.fixture:setCategory(FLOOR_CATAGORY);
-    -- grappleAnchor end --
+    -- grappleAnchorBlock --
+    grappleAnchorBlock = {}
+    grappleAnchorBlock.shape = love.physics.newRectangleShape(50, 50)
+    grappleAnchorBlock.body =
+        love.physics.newBody(baseWorld, love.graphics.getWidth() / 2, love.graphics.getHeight() / 2, "kinematic")
+    grappleAnchorBlock.fixture = love.physics.newFixture(grappleAnchorBlock.body, grappleAnchorBlock.shape, 1)
+    grappleAnchorBlock.fixture:setFriction(1)
+    grappleAnchorBlock.fixture:setCategory(FLOOR_CATEGORY)
+    -- grappleAnchorBlock end --
 
+    baseWorld:setCallbacks(baseWorld.beginContact, baseWorld.endContact, mypresolve, mypostSolve)
+end
+
+function doesContainCatagory(fixt, cat)
+    local cats = {fixt:getCategory()}
+    for i = 1, #cats do
+        if cats[i] == cat then
+            return true
+        elseif cats[i] > cat then
+            return false
+        end
+    end
+    return false
 end
 
 function love.update(dt)
-    local contacts = baseWorld:getContacts( )
-    for i = 0,#baseWorld:getContacts( ) do
-        if contacts[i] ~= nil then
-            f1, f2 = contacts[i]:getFixtures()
-            if f1:getCategory() == FLOOR_CATAGORY and f2:getCategory() == CHARACTER_CATAGORY or f2:getCategory() == FLOOR_CATAGORY and f1:getCategory() == CHARACTER_CATAGORY then
-                if f1:getCategory() == FLOOR_CATAGORY then
-                    charFic=f2
-                else
-                    charFic=f1
-                end
-                charFic:getUserData().canJump = true
+    local contacts = baseWorld:getContacts()
+
+    for i = 1, #baseWorld:getContacts() do
+        f1, f2 = contacts[i]:getFixtures()
+        if
+            not love.keyboard.isDown("space") and
+                ((doesContainCatagory(f1, FLOOR_CATEGORY) and doesContainCatagory(f2, CHARACTER_CATEGORY)) or
+                    (doesContainCatagory(f2, FLOOR_CATEGORY) and doesContainCatagory(f1, CHARACTER_CATEGORY)))
+         then
+            if doesContainCatagory(f1, FLOOR_CATEGORY) then
+                charFic = f2
+            else
+                charFic = f1
             end
-            -- print()
+            charFic:getUserData().canJump = true
+        end
+        local podf = nil
+        local of = nil
+        if doesContainCatagory(f1, GRAPPLEPOD_CATEGORY) then
+            podf = f1
+            othf = f2
+        elseif doesContainCatagory(f2, GRAPPLEPOD_CATEGORY) then
+            podf = f2
+            othf = f1
+        end
+        if podf ~= nil then
+            local d, x2, y2, x, y = love.physics.getDistance(podf, othf)
+            gGirl.grapplepod.fixture:destroy()
+            gGirl.grapplepod.body:destroy()
+
+            gGirl.grapplepod.body = love.physics.newBody(baseWorld, x, y, "static")
+            gGirl.grapplepod.fixture = love.physics.newFixture(gGirl.grapplepod.body, gGirl.grapplepod.shape, 1)
+            gGirl.grapplepod.fixture:setCategory(GRAPPLEPOD_CATEGORY)
+            gGirl.grapplepod.fixture:setMask(CHARACTER_CATEGORY)
+
+            local dist, x1, y1, x2, y2 = love.physics.getDistance(gGirl.fixture, gGirl.grapplepod.fixture)
+
+            gGirl.grapplepod.joint = love.physics.newRopeJoint(gGirl.body, gGirl.grapplepod.body, x1, y1, x2, y2, dist)
         end
     end
 
     baseWorld:update(dt)
     gGirl:update(dt)
-    tmpHandleRope(dt)
 end
 
 function love.draw()
     gGirl:draw()
 
     local gaPos = {}
-    gaPos.x, gaPos.y = grappleAnchor.body:getPosition()
-    love.graphics.rectangle("fill", gaPos.x-25, gaPos.y-25, 50, 50)
+    gaPos.x, gaPos.y = grappleAnchorBlock.body:getPosition()
+    love.graphics.rectangle("fill", gaPos.x - 25, gaPos.y - 25, 50, 50)
+end
 
-
-    if grappleropejoint.joint ~= nil then
-        
-        local x1, y1 = gGirl.body:getPosition()
-        local x2, y2 = grappleropejoint.body:getPosition()
-        love.graphics.line(x1, y1, x2, y2)
-    end
+function mypostSolve(f1, f2, contact)
+end
+function mypreSolve(f1, f2, contact)
 end

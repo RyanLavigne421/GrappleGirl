@@ -1,4 +1,5 @@
-CHARACTER_CATAGORY = 2
+CHARACTER_CATEGORY = 2
+GRAPPLEPOD_CATEGORY = 3
 
 Character = {}
 
@@ -9,28 +10,39 @@ function Character:new(o, world, pos, speed)
     self.speed = {x = speed.x or speed[1] or 150, y = speed.y or speed[2] or 150}
     self.mv = {u = false, d = false, r = false, l = false}
     self.shape = love.physics.newRectangleShape(20, 20)
-    -- self.shape = love.physics.newCircleShape(20)
 
     self.body = love.physics.newBody(world, pos.x or pos[1], pos.y or pos[2], "dynamic")
     self.body:setFixedRotation(true)
 
     self.fixture = love.physics.newFixture(self.body, self.shape, 1)
     self.fixture:setFriction(1)
-    self.fixture:setCategory(CHARACTER_CATAGORY)
+    self.fixture:setCategory(CHARACTER_CATEGORY)
     self.fixture:setUserData(o)
-    -- setmetatable(self.fixture:getUserData().val, self)
-    -- self.fixture:getUserData().val = o
 
     self.canJump = true
+
+    self.grapplepod = {
+        joint = nil,
+        fixture = nil,
+        shape = love.physics.newCircleShape(2),
+        body = nil,
+        state = nil,
+        lastMouseState = {b1 = false, b2 = false, b3 = false}
+    }
 
     return o
 end
 
 function Character:draw()
     local x, y = self.body:getPosition()
-    -- love.graphics.circle("fill", x, y, 20)
+
     love.graphics.circle("fill", x, y, 10)
-    love.graphics.rectangle("fill", x - 10, y - 10, 20, 20)
+
+    if self.grapplepod.body ~= nil then
+        local ax, ay = self.grapplepod.body:getPosition()
+        love.graphics.circle("fill", ax, ay, 1)
+        love.graphics.line(x, y, ax, ay)
+    end
 end
 
 function Character:update(dt)
@@ -44,35 +56,35 @@ function Character:update(dt)
 
     if (self.canJump and love.keyboard.isDown("space")) then
         self.canJump = false
-        self.body:applyLinearImpulse(0, -50)
+        self.body:applyLinearImpulse(0, -400)
     end
+    self:shootRope()
 end
 
-lastMouseState = {
-    b1 = false,
-    b2 = false,
-    b3 = false
-}
+function normalize(x, y)
+    local v = math.sqrt(x * x + y * y)
 
+    return (x / v), (y / v)
+end
 
-grappleropejoint = {joint = nil, body=nil}
-function tmpHandleRope(dt)
-    if love.mouse.isDown(1) ~= lastMouseState.b1 then
-        lastMouseState.b1 = love.mouse.isDown(1)
+function Character:shootRope()
+    if love.mouse.isDown(1) ~= self.grapplepod.lastMouseState.b1 then
+        self.grapplepod.lastMouseState.b1 = love.mouse.isDown(1)
         if (love.mouse.isDown(1)) then
-            local pos = {}
-            local distance, x1, y1, x2, y2 = love.physics.getDistance(gGirl.fixture, grappleAnchor.fixture);
-            -- pos.b1x,pos.b1y = gGirl.body.getPosition();
-            -- pos.b2x,pos.b2y = grappleAnchor.body.getPosition();
-            -- pos.dis = me
-            grappleropejoint.body = love.physics.newBody(baseWorld, x2,y2,"static");
-            grappleropejoint.joint = love.physics.newRopeJoint(gGirl.body, grappleropejoint.body, x1, y1, x2, y2, distance);
-            -- grappleropejoint.joint.setCollideConnected(true);
+            local mx, my = love.mouse:getPosition()
+            local x, y = self.body:getPosition()
+            self.grapplepod.body = love.physics.newBody(baseWorld, x, y, "dynamic")
+            self.grapplepod.fixture = love.physics.newFixture(self.grapplepod.body, self.grapplepod.shape, 1)
+            self.grapplepod.fixture:setCategory(GRAPPLEPOD_CATEGORY)
+            self.grapplepod.fixture:setMask(CHARACTER_CATEGORY)
+
+            local vx, vy = normalize(mx - x, my - y)
+            self.grapplepod.body:setLinearVelocity(vx * 1500, vy * 1500)
         else
-            grappleropejoint.joint:destroy();
-            grappleropejoint.body:destroy();
-            grappleropejoint.joint = nil;
-            grappleropejoint.body = nil;
+            self.grapplepod.fixture:destroy()
+            self.grapplepod.body:destroy()
+            self.grapplepod.body = nil
+            self.grapplepod.fixture = nil
         end
     end
 end
