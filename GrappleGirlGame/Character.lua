@@ -1,6 +1,10 @@
 CHARACTER_CATEGORY = 2
 GRAPPLEPOD_CATEGORY = 3
 
+GRAPPLE_COIL_SPEED = 500
+SHORTEN_COIL_KEY = "w"
+LENGTHEN_COIL_KEY = "s"
+
 Character = {}
 
 function Character:new(o, world, pos, speed)
@@ -35,17 +39,37 @@ end
 function Character:draw()
     local x, y = self.body:getPosition()
 
+    x, y = Camera:applyOffset(x, y)
+
     love.graphics.circle("fill", x, y, 10)
+
+    -- Draws sprite for weapon on spawn
+    Combat:update(x, y, angletomouse)
+    -- Debug print to see angletomouse
+    love.graphics.print(angletomouse, 250, 0)
+
+    -- Going to be used to fire bullets
+    if (love.keyboard.isDown("f")) then
+      -- Combat:attack(x + 10, y)
+
+    end
 
     if self.grapplepod.body ~= nil then
         local ax, ay = self.grapplepod.body:getPosition()
+        ax, ay = Camera:applyOffset(ax, ay)
         love.graphics.circle("fill", ax, ay, 1)
         love.graphics.line(x, y, ax, ay)
     end
 end
 
 function Character:update(dt)
-    local f = 1000
+   -- Added getting mouse x and y to be used to do angletomouse
+  mousex = love.mouse.getX()
+  mousey = love.mouse.getY()
+  mousex, mousey = Camera:applyOffset(mousex - 360, mousey - 540)
+  angletomouse = math.atan2(mousey, mousex)
+
+  local f = 1000
     if (love.keyboard.isDown("a")) then
         self.body:applyForce(-f, 0)
     end
@@ -53,9 +77,25 @@ function Character:update(dt)
         self.body:applyForce(f, 0)
     end
 
+    -- if (love.keyboard.isDown("f")) then
+    --    -- Combat:attack(10, 10)
+    -- end
+
     if (self.canJump and love.keyboard.isDown("space")) then
         self.canJump = false
         self.body:applyLinearImpulse(0, -400)
+    end
+
+    if self.grapplepod.joint ~= nil then
+        if (self.canJump and love.keyboard.isDown(LENGTHEN_COIL_KEY)) then
+            self.grapplepod.joint:setMaxLength(self.grapplepod.joint:getMaxLength() + dt * GRAPPLE_COIL_SPEED)
+        end
+        if (self.canJump and love.keyboard.isDown(SHORTEN_COIL_KEY)) then
+            self.grapplepod.joint:setMaxLength(self.grapplepod.joint:getMaxLength() - dt * GRAPPLE_COIL_SPEED)
+        end
+        if self.grapplepod.joint:getMaxLength() < 0 then
+            self.grapplepod.joint:setMaxLength(0)
+        end
     end
 end
 
@@ -65,8 +105,9 @@ function normalize(x, y)
     return (x / v), (y / v)
 end
 
-function Character:ropeMousePressedCallbackshootRope()
+function Character:ropeMousePressedCallbackshootRope(vp)
     local mx, my = love.mouse:getPosition()
+    mx, my = vp:reverseOffset(mx, my)
     local x, y = self.body:getPosition()
     self.grapplepod.body = love.physics.newBody(baseWorld, x, y, "dynamic")
     self.grapplepod.fixture = love.physics.newFixture(self.grapplepod.body, self.grapplepod.shape, 1)
@@ -82,4 +123,5 @@ function Character:ropeMouseReleasedCallbackshootRope()
     self.grapplepod.body:destroy()
     self.grapplepod.body = nil
     self.grapplepod.fixture = nil
+    self.grapplepod.joint = nil
 end

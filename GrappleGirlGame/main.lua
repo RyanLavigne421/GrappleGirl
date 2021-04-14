@@ -1,10 +1,18 @@
 require("Character")
 require("love")
+require("music")
+require("camera")
+require("Combat")
 FLOOR_CATEGORY = 4
 
 function love.load()
+    music = love.audio.play("audio/music/Dioma.mp3", "stream", true)
+    music:setVolume(0.1)
+
     baseWorld = love.physics.newWorld(0, 1000, false)
     gGirl = Character:new(nil, baseWorld, {love.graphics.getWidth() / 2, 100}, {400, 400})
+    viewport = Camera:new(love.graphics.getWidth(), love.graphics.getHeight(), 0.25, 0.40, nil, 0.20)
+    weapon = Combat:new()
 
     -- floor --
     floor = {}
@@ -25,6 +33,9 @@ function love.load()
     grappleAnchorBlock.fixture:setCategory(FLOOR_CATEGORY)
     -- grappleAnchorBlock end --
 
+    -- Defined image of grapplegun
+    grapplegun = love.graphics.newImage("magnum.png")
+
     baseWorld:setCallbacks(baseWorld.beginContact, baseWorld.endContact, mypresolve, mypostSolve)
 end
 
@@ -41,6 +52,7 @@ function doesContainCatagory(fixt, cat)
 end
 
 function love.update(dt)
+
     local contacts = baseWorld:getContacts()
 
     for i = 1, #baseWorld:getContacts() do
@@ -84,13 +96,26 @@ function love.update(dt)
 
     baseWorld:update(dt)
     gGirl:update(dt)
+    Camera:update(gGirl)
+end
+
+function love.keypressed(key)
+    if key == 'p' then
+        -- plays from stopped position
+        love.audio.play(music)
+    elseif key == 'l' then
+        -- only pauses audio doesn't reset
+        love.audio.stop(music)
+    end
 end
 
 function love.draw()
     gGirl:draw()
+    Combat:new()
 
     local gaPos = {}
     gaPos.x, gaPos.y = grappleAnchorBlock.body:getPosition()
+    gaPos.x, gaPos.y = Camera:applyOffset(gaPos.x, gaPos.y)
     love.graphics.rectangle("fill", gaPos.x - 25, gaPos.y - 25, 50, 50)
 end
 
@@ -101,7 +126,7 @@ end
 
 function love.mousepressed(x, y, button, istouch, presses)
     if button == 1 then
-        gGirl:ropeMousePressedCallbackshootRope()
+        gGirl:ropeMousePressedCallbackshootRope(viewport)
     end
 end
 
